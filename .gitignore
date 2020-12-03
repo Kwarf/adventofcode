@@ -6,5 +6,8 @@ main
 *.hi
 .stack-work
 
+# Rust
+target/
+
 # MacOS
 .DS_Store
