@@ -6,4 +6,4 @@ cabal-version:       >=1.10
 executable main
   main-is:             main.hs
   default-language:    Haskell2010
-  build-depends:       base >= 4.7 && < 5, parsec
+  build-depends:       base >= 4.7 && < 5, cond, parsec

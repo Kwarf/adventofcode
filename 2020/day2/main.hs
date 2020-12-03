@@ -1,3 +1,4 @@
+import qualified Data.Algebra.Boolean          as Algebra
 import           Data.Maybe
 import qualified Text.Parsec                   as Parsec
 
@@ -20,9 +21,16 @@ parser = do
   password <- Parsec.many1 Parsec.letter
   return (Policy (minOcc, maxOcc) letter, password)
 
-isValidPassword a = cnt >= fst ao && cnt <= snd ao
+isValidFirstPartPassword a = cnt >= fst ao && cnt <= snd ao
  where
   cnt = length . filter ((letter $ fst a) ==) $ snd a
+  ao  = allowedOccurrences $ fst a
+
+isValidSeondPartPassword a = Algebra.xor
+  (snd a !! (fst ao - 1) == ltr)
+  (length (snd a) >= snd ao && snd a !! (snd ao - 1) == ltr)
+ where
+  ltr = letter $ fst a
   ao  = allowedOccurrences $ fst a
 
 parsedToMaybe :: Either Parsec.ParseError a -> Maybe a
@@ -35,4 +43,7 @@ main = do
       "input.txt"
 
   putStr "The answer to the first part is: "
-  print . length . filter isValidPassword $ input
+  print . length . filter isValidFirstPartPassword $ input
+
+  putStr "The answer to the second part is: "
+  print . length . filter isValidSeondPartPassword $ input
