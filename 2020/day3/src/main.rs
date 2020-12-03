@@ -46,6 +46,7 @@ struct Position {
     y: usize,
 }
 
+#[derive(Copy, Clone)]
 struct StepSequence {
     x: usize,
     y: usize,
@@ -83,6 +84,14 @@ fn parse_line<T: AsRef<str>>(line: T) -> Vec<Token> {
     line.as_ref().chars().map(Token::from).collect()
 }
 
+fn count_trees(map: &Map, sequence: StepSequence) -> usize {
+    sequence
+        .map(|x| map.token_at(&x))
+        .take_while(|x| x.is_some())
+        .filter(|x| x.unwrap() == Token::Tree)
+        .count()
+}
+
 fn main() {
     let file = File::open("input.txt").expect("Input file not found");
     let map = BufReader::new(file)
@@ -91,13 +100,25 @@ fn main() {
         .map(parse_line)
         .collect::<Map>();
 
-    let num_trees = StepSequence::new(3, 1)
-        .map(|x| map.token_at(&x))
-        .take_while(|x| x.is_some())
-        .filter(|x| x.unwrap() == Token::Tree)
-        .count();
+    println!(
+        "The answer to the first part is: {}",
+        count_trees(&map, StepSequence::new(3, 1))
+    );
 
-    println!("The answer to the first part is: {}", num_trees);
+    let sequences = vec![
+        StepSequence::new(1, 1),
+        StepSequence::new(3, 1),
+        StepSequence::new(5, 1),
+        StepSequence::new(7, 1),
+        StepSequence::new(1, 2),
+    ];
+
+    let mul_trees = sequences
+        .iter()
+        .map(|x| count_trees(&map, *x))
+        .fold(1, |acc, x| acc * x);
+
+    println!("The answer to the second part is: {:?}", mul_trees);
 }
 
 #[cfg(test)]
