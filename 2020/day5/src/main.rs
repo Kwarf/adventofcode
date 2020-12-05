@@ -1,4 +1,4 @@
-use std::{fs, str::FromStr};
+use std::{collections::HashSet, fs, str::FromStr};
 
 #[derive(Debug, PartialEq)]
 struct Seat {
@@ -57,13 +57,25 @@ impl Iterator for BinIter<'_> {
 }
 
 fn main() {
-    let highest_id = fs::read_to_string("input.txt")
+    let seat_ids = fs::read_to_string("input.txt")
         .expect("Input file not found")
         .lines()
         .filter_map(|x| x.parse::<Seat>().ok())
         .map(|x| x.id())
-        .max()
-        .unwrap();
+        .collect::<HashSet<i32>>();
 
-    println!("The answer to the first part is: {}", highest_id);
+    println!(
+        "The answer to the first part is: {}",
+        seat_ids.iter().max().unwrap()
+    );
+
+    println!(
+        "The answer to the second part is: {}",
+        seat_ids
+            .iter()
+            .filter(|&x| !seat_ids.contains(&(x + 1)) && seat_ids.contains(&(x + 2)))
+            .next()
+            .map(|x| x + 1)
+            .unwrap()
+    );
 }
