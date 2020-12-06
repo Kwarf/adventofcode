@@ -5,7 +5,8 @@ Seemed easier than all previous days?
 ```
 % cargo run
    Compiling day6 v0.1.0 (/Users/kwarf/Development/adventofcode/2020/day6)
-    Finished dev [unoptimized + debuginfo] target(s) in 0.86s
+    Finished dev [unoptimized + debuginfo] target(s) in 0.66s
      Running `target/debug/day6`
 The answer to the first part is: 6532
+The answer to the second part is: 3427
 ```
