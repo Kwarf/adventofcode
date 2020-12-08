@@ -1,9 +1,10 @@
 use std::{collections::HashSet, fs, str::FromStr};
 
+#[derive(Clone, PartialEq)]
 enum OpCode {
     Acc(i32),
     Jmp(i32),
-    Nop,
+    Nop(i32),
 }
 
 impl FromStr for OpCode {
@@ -14,7 +15,7 @@ impl FromStr for OpCode {
         match &s[..3] {
             "acc" => Ok(OpCode::Acc(value)),
             "jmp" => Ok(OpCode::Jmp(value)),
-            "nop" => Ok(OpCode::Nop),
+            "nop" => Ok(OpCode::Nop(value)),
             _ => panic!("Unhandled opcode"),
         }
     }
@@ -36,7 +37,7 @@ impl OpCode {
                 acc: state.acc,
                 history,
             },
-            OpCode::Nop => State {
+            OpCode::Nop(_) => State {
                 pc: state.pc + 1,
                 acc: state.acc,
                 history,
@@ -52,10 +53,51 @@ struct State {
     history: HashSet<usize>,
 }
 
-fn run(state: State, program: &[OpCode]) -> i32 {
+struct BruteForcer<'a> {
+    step: usize,
+    original: &'a [OpCode],
+}
+
+impl Iterator for BruteForcer<'_> {
+    type Item = Vec<OpCode>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.step = self.original.iter().enumerate().position(|(i, x)| {
+            i > self.step
+                && match x {
+                    OpCode::Jmp(_) | OpCode::Nop(_) => true,
+                    _ => false,
+                }
+        })?;
+
+        let mut variant = self.original.to_vec();
+        variant[self.step] = match variant[self.step] {
+            OpCode::Nop(x) => OpCode::Jmp(x),
+            OpCode::Jmp(x) => OpCode::Nop(x),
+            _ => panic!("Matched opcode not nop or jmp"),
+        };
+        Some(variant)
+    }
+}
+
+impl BruteForcer<'_> {
+    fn new<'a>(original: &'a [OpCode]) -> BruteForcer<'a> {
+        BruteForcer { step: 0, original }
+    }
+}
+
+fn run_p1(state: State, program: &[OpCode]) -> i32 {
     match program[state.pc].execute(state) {
         State { pc, acc, history } if history.contains(&pc) => acc,
-        new_state => run(new_state, program),
+        new_state => run_p1(new_state, program),
+    }
+}
+
+fn run_p2(state: State, program: &[OpCode]) -> Option<i32> {
+    match program[state.pc].execute(state) {
+        State { pc, acc, .. } if pc >= program.len() => Some(acc),
+        State { pc, acc: _, history } if history.contains(&pc) => None,
+        new_state => run_p2(new_state, program),
     }
 }
 
@@ -68,6 +110,14 @@ fn main() {
 
     println!(
         "The answer to the first part is: {}",
-        run(State::default(), &program)
+        run_p1(State::default(), &program)
+    );
+
+    println!(
+        "The answer to the second part is: {}",
+        BruteForcer::new(&program)
+            .filter_map(|x| run_p2(State::default(), &x))
+            .next()
+            .expect("No solution to part 2 found")
     );
 }
