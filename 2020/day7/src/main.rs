@@ -6,10 +6,10 @@ use std::{
 
 use regex::Regex;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct BagRule {
     color: String,
-    content: HashMap<String, i32>,
+    content: HashMap<String, usize>,
 }
 
 impl FromStr for BagRule {
@@ -25,10 +25,10 @@ impl FromStr for BagRule {
                 .filter_map(|x| {
                     Some((
                         x.get(2)?.as_str().to_owned(),
-                        x.get(1)?.as_str().parse::<i32>().ok()?,
+                        x.get(1)?.as_str().parse::<usize>().ok()?,
                     ))
                 })
-                .collect::<HashMap<String, i32>>(),
+                .collect::<HashMap<String, usize>>(),
         })
     }
 }
@@ -42,50 +42,36 @@ fn part_one(color: &str, rules: &[BagRule]) -> Vec<String> {
         .collect::<Vec<String>>()
 }
 
+fn part_two(color: &str, num: usize, rules: &HashMap<String, BagRule>) -> usize {
+    rules
+        .get(color)
+        .unwrap()
+        .content
+        .iter()
+        .fold(num, |acc, (x, n)| acc + part_two(&x, num * n, rules))
+}
+
 fn main() {
     let rules = fs::read_to_string("input.txt")
         .expect("Input file not found")
         .lines()
         .filter_map(|x| x.parse::<BagRule>().ok())
-        .collect::<Vec<BagRule>>();
+        .map(|x| (x.color.clone(), x))
+        .collect::<HashMap<String, BagRule>>();
 
     println!(
         "The answer to the first part is: {}",
-        part_one("shiny gold", &rules)
-            .iter()
-            .collect::<HashSet<&String>>()
-            .len()
+        part_one(
+            "shiny gold",
+            &rules.values().cloned().collect::<Vec<BagRule>>()
+        )
+        .iter()
+        .collect::<HashSet<&String>>()
+        .len()
     );
-}
 
-#[cfg(test)]
-mod tests {
-    use std::collections::HashSet;
-
-    use super::*;
-
-    const INPUT: &'static str = "light red bags contain 1 bright white bag, 2 muted yellow bags.
-dark orange bags contain 3 bright white bags, 4 muted yellow bags.
-bright white bags contain 1 shiny gold bag.
-muted yellow bags contain 2 shiny gold bags, 9 faded blue bags.
-shiny gold bags contain 1 dark olive bag, 2 vibrant plum bags.
-dark olive bags contain 3 faded blue bags, 4 dotted black bags.
-vibrant plum bags contain 5 faded blue bags, 6 dotted black bags.
-faded blue bags contain no other bags.
-dotted black bags contain no other bags.";
-
-    #[test]
-    fn test_part_one() {
-        let rules = INPUT
-            .lines()
-            .filter_map(|x| x.parse::<BagRule>().ok())
-            .collect::<Vec<BagRule>>();
-
-        let result = part_one("shiny gold", &rules)
-            .iter()
-            .collect::<HashSet<&String>>()
-            .len();
-
-        assert_eq!(4, result);
-    }
+    println!(
+        "The answer to the second part is: {}",
+        part_two("shiny gold", 1, &rules) - 1
+    );
 }
