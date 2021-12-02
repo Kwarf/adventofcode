@@ -12,3 +12,7 @@ target/
 
 # MacOS
 .DS_Store
+
+# C#
+bin/
+obj/
