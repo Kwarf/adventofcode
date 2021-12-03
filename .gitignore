@@ -16,3 +16,7 @@ target/
 # C#
 bin/
 obj/
+
+# F#
+.fake
+.ionide
