@@ -6,4 +6,5 @@ I don't like it but it's probably because I barely get it.
 ```
 % julia main.jl
 The answer to the first part is: 10680
+The answer to the second part is: 31892
 ```
