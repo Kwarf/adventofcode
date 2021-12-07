@@ -6,4 +6,5 @@ it for now.
 ```
 % cabal run -v0
 The answer to the first part is: 343441
+The answer to the second part is: 98925151
 ```

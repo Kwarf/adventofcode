@@ -2,13 +2,12 @@
 import Data.List.Split (endBy)
 import Data.Map (elems, fromListWith, mapWithKey, keys)
 
-costs t = mapWithKey cost
-  where
-    cost p n = abs (t - p) * n
+costs f t = mapWithKey (\p n -> f (abs (t - p)) * n)
 
-cheapest cs = minimum $ map (\x -> sum $ elems $ costs x cs) $ keys cs
+cheapest f cs = minimum $ map (\x -> sum $ elems $ costs f x cs) [0..maximum $ keys cs]
 
 main = do
-  initial <- fromListWith (+) . map ((,1) . (read :: [Char] -> Int)) . endBy "," <$> readFile "input.txt"
+  indata <- fromListWith (+) . map ((,1) . (read :: [Char] -> Int)) . endBy "," <$> readFile "input.txt"
 
-  putStrLn $ "The answer to the first part is: " ++ show (cheapest initial)
+  putStrLn $ "The answer to the first part is: " ++ show (cheapest id indata)
+  putStrLn $ "The answer to the second part is: " ++ show (cheapest (\x -> sum $ take x [1..]) indata)
