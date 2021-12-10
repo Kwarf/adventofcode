@@ -1,9 +1,5 @@
-import Data.Maybe (fromJust, mapMaybe, catMaybes)
-import Data.Tuple (swap)
-
--- Returns the "score" of a closing Char
-score :: Char -> Int
-score = fromJust . Prelude.flip lookup [(')', 3), (']', 57), ('}', 1197), ('>', 25137)]
+import Data.List (elemIndex, sort)
+import Data.Maybe (fromJust, mapMaybe)
 
 -- True if Char is an opening bracket
 isOpen :: Char -> Bool
@@ -11,27 +7,46 @@ isOpen = Prelude.flip elem "([{<"
 
 -- Flips a character
 flip :: Char -> Char
-flip = fromJust . Prelude.flip lookup (ltr ++ rtl)
+flip c = head $ mapMaybe (uncurry match) [('(', ')'), ('[', ']'), ('{', '}'), ('<', '>')]
   where
-    ltr = [('(', ')'), ('[', ']'), ('{', '}'), ('<', '>')]
-    rtl = map swap ltr
+    match a b
+      | c == a = Just b
+      | c == b = Just a
+      | otherwise = Nothing
 
 -- Iterates through a string and returns either the unexpected Char, or Nothing
-findError :: [Char] -> [Char] -> Maybe Char
-findError _ [] = Nothing
-findError prev (x:xs)
-  | isOpen x = findError (x:prev) xs
-  | otherwise = if correctlyClosed then findError (tail prev) xs else Just x
+findError :: [Char] -> [Char] -> ([Char], Maybe Char)
+findError prev [] = (prev, Nothing)
+findError prev (x : xs)
+  | isOpen x = findError (x : prev) xs
+  | otherwise = if isCorrectlyClosed then popRecurse else errorResult
   where
-    correctlyClosed = head prev == Main.flip x
+    isCorrectlyClosed = head prev == Main.flip x
+    popRecurse = findError (tail prev) xs
+    errorResult = ([], Just x)
 
-partOne :: [String] -> Int
-partOne = sum . map score . mapMaybe (findError [])
+partOne :: [([Char], Maybe Char)] -> Int
+partOne = sum . map score . mapMaybe snd
+  where
+    score = fromJust . Prelude.flip lookup [(')', 3), (']', 57), ('}', 1197), ('>', 25137)]
+
+partTwo :: [([Char], Maybe Char)] -> Int
+partTwo input = scores !! (length scores `div` 2)
+  where
+    takeIncomplete (c, m) = (\_ -> Just c) =<< m
+    incomplete = mapMaybe takeIncomplete input
+    valueOf c = 1 + fromJust (elemIndex c ")]}>")
+    score acc [] = acc
+    score acc (x : xs) = score (acc * 5 + valueOf x) xs
+    scores = sort $ map (score 0 . map Main.flip) incomplete
 
 main = do
-  indata <- lines <$> readFile "input.txt"
+  indata <- map (findError []) . lines <$> readFile "input.txt"
 
   putStrLn $
     "The answer to the first part is: "
       ++ show (partOne indata)
 
+  putStrLn $
+    "The answer to the second part is: "
+      ++ show (partTwo indata)
