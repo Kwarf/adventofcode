@@ -64,12 +64,22 @@ step state = clearFlashes $ recTrigger (State (dx state) stepAllOne (flashers st
       | all (hasFlashed s) (toFlash s) = s
       | otherwise = recTrigger $ flash s (head $ toFlash s)
 
+countFlashes :: State -> Int
+countFlashes s = length $ filter (==0) (numbers s)
+
 partOne :: State -> Int
-partOne state = loop 0 state 100
+partOne state = next 0 state 100
   where
-    countFlashes s = length $ filter (==0) (numbers s)
-    loop acc _ 0 = acc
-    loop acc s n = loop (acc + countFlashes (step s)) (step s) (n - 1)
+    next acc _ 0 = acc
+    next acc s n = next (acc + countFlashes (step s)) (step s) (n - 1)
+
+partTwo :: State -> Int
+partTwo state = next 0 0 state
+  where
+    no = (length . numbers) state
+    next acc flashes s 
+      | flashes == no = acc
+      | otherwise = next (acc + 1) (countFlashes (step s)) (step s)
 
 main = do
   indata <- parse <$> readFile "input.txt"
@@ -77,3 +87,7 @@ main = do
   putStrLn $
     "The answer to the first part is: "
       ++ show (partOne indata)
+
+  putStrLn $
+    "The answer to the second part is: "
+      ++ show (partTwo indata)
