@@ -7,4 +7,5 @@ in a recursive way.
 ```
 % cabal run -v0
 The answer to the first part is: 3576
+The answer to the second part is: 84271
 ```
