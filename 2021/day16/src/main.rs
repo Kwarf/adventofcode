@@ -82,8 +82,25 @@ fn sum_version(packet: &Packet) -> u32 {
         }
 }
 
+fn decode(packet: &Packet) -> u64 {
+    match &packet.data {
+        Payload::Literal(n) => *n,
+        Payload::Operator(packets) => match packet.type_id {
+            0 => packets.iter().map(decode).sum(),
+            1 => packets.iter().map(decode).fold(1, |acc, x| acc * x),
+            2 => packets.iter().map(decode).min().unwrap(),
+            3 => packets.iter().map(decode).max().unwrap(),
+            5 => if decode(&packets[0]) > decode(&packets[1]) { 1 } else { 0 },
+            6 => if decode(&packets[0]) < decode(&packets[1]) { 1 } else { 0 },
+            7 => if decode(&packets[0]) == decode(&packets[1]) { 1 } else { 0 },
+            _ => panic!("Unknown packet type {}", packet.type_id),
+        }
+    }
+}
+
 fn main() {
     let input = parse(&mut hex_to_bin(&read_to_string("input.txt").unwrap()).chars());
 
     println!("The answer to the first part is: {}", sum_version(&input));
+    println!("The answer to the second part is: {}", decode(&input));
 }
