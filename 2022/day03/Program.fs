@@ -8,6 +8,15 @@ let duplicates sack =
 
 let priority c = if Char.IsLower c then int c - 96 else int c - 38
 
+let input = File.ReadAllLines("input.txt")
+
 printfn
-    "The answer to the first part is: %i"
-    (File.ReadAllLines("input.txt") |> Array.sumBy (Array.sumBy priority << duplicates))
+    "The answer to the first part is: %i" 
+    (input |> Array.sumBy (Array.sumBy priority << duplicates))
+
+printfn
+    "The answer to the second part is: %i"
+    (input
+     |> Array.chunkBySize 3
+     |> Array.map (fun x -> Set.intersectMany (x |> Array.map Set.ofSeq))
+     |> Array.sumBy (priority << Seq.head << Set.toSeq))
