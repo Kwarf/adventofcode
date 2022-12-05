@@ -23,12 +23,12 @@ let instructions =
     |> Seq.map (fun x -> { Qty = conv x.Groups[1]; From = conv x.Groups[2]; To = conv x.Groups[3] })
     |> Seq.toList
 
-let rec step (state: char list list) instruction =
+let rec partOne (state: char list list) instruction =
     match instruction with
     | x when x.Qty = 0 -> state
     | _ ->
         let item = List.last state[instruction.From - 1]
-        step
+        partOne
             (state
              |> List.mapi (fun i x ->
                  match i with
@@ -37,11 +37,23 @@ let rec step (state: char list list) instruction =
                  | _ -> x))
             { instruction with Qty = instruction.Qty - 1 }
 
-let rec solve state instructions =
+let partTwo state instruction =
+    state
+    |> List.mapi (fun i (x: 'a list) ->
+        match i with
+        | i when i + 1 = instruction.From -> x.[.. x.Length - instruction.Qty - 1]
+        | i when i + 1 = instruction.To -> List.append x (state[instruction.From - 1] |> List.rev |> List.take instruction.Qty |> List.rev)
+        | _ -> x)
+    
+let rec solve fn state instructions =
     match instructions with
-    | head :: tail -> solve (step state head) tail
+    | head :: tail -> solve fn (fn state head) tail
     | [] -> state
 
 printfn
    "The answer to the first part is: %s"
-   (solve containers instructions |> List.map List.last |> String.Concat)
+   (solve partOne containers instructions |> List.map List.last |> String.Concat)
+
+printfn
+   "The answer to the second part is: %s"
+   (solve partTwo containers instructions |> List.map List.last |> String.Concat)

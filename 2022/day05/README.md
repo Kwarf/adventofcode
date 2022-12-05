@@ -5,4 +5,5 @@ This is probably one of the last F# days..
 ```
 % dotnet run
 The answer to the first part is: ZRLJGSCTR
+The answer to the second part is: PRTTGRFPB
 ```
