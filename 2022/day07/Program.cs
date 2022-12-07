@@ -1,6 +1,9 @@
-﻿var tree = System.IO.File.ReadAllLines("input.txt").Aggregate<string, Node>(new Directory(null, "/"), (node, line) => Parse(node, line)).Root;
+﻿var tree = System.IO.File.ReadAllLines("input.txt").Aggregate<string, Node>(new Directory(null, "/"), Parse).Root;
 
 Console.WriteLine($"The answer to the first part is: {tree.Directories.Where(x => x.TotalSize <= 100000).Sum(x => x.TotalSize)}");
+
+var requiredFree = tree.TotalSize - 40000000;
+Console.WriteLine($"The answer to the second part is: {tree.Directories.Where(x => x.TotalSize >= requiredFree).Select(x => x.TotalSize).Min()}");
 
 Node Parse(Node node, string data) => data.Split(' ') switch
 {
