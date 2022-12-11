@@ -14,26 +14,36 @@ let motions =
     |> Array.map parse
     |> Array.collect id
 
-type Position = int * int
-type Rope = Position * Position
-
 let dist a b = abs (fst b - fst a) + abs (snd b - snd a)
-let (+) a b = fst a + fst b, snd a + snd b
+let add a b = fst a + fst b, snd a + snd b
 
 let step (visited, rope) motion =
-    let head = fst rope + motion
-    let isDiagonal tail = fst head <> fst tail && snd head <> snd tail
-    let dstep tail = sign (fst head - fst tail), sign (snd head - snd tail)
-    let tail =
-        match snd rope with
-        | x when (dist head x = 2 && isDiagonal x) || dist head x < 2 -> x
-        | x when isDiagonal x -> x + dstep x
-        | x -> x + motion
-    (Set.add tail visited, Rope(head, tail))
+    let isDiagonal h t = fst h <> fst t && snd h <> snd t
+    let step h t = sign (fst h - fst t), sign (snd h - snd t)
+    let list =
+        rope
+        |> List.skip 1
+        |> List.fold
+            (fun n x ->
+                let head = List.head n
+                match x with
+                | x when dist head x = 2 && isDiagonal head x || dist head x < 2 -> x
+                | x -> add x (step head x)
+                :: n)
+            [ add (List.head rope) motion ]
+        |> List.rev
+    (Set.add (List.last list) visited, list)
 
 printfn
     "The answer to the first part is: %i"
     (motions
-     |> Array.fold step (Set.empty, (Rope((0, 0), (0, 0))))
+     |> Array.fold step (Set.empty, ([(0, 0); (0, 0)]))
+     |> fst
+     |> Set.count)
+
+printfn
+    "The answer to the second part is: %i"
+    (motions
+     |> Array.fold step (Set.empty, ((0, 0)) |> List.replicate 10)
      |> fst
      |> Set.count)
