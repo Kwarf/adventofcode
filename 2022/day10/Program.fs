@@ -21,8 +21,19 @@ let cycle cpu =
 
 printfn
     "The answer to the first part is: %i"
-    ({ 1..220 }
+    ({ 1 .. 220 }
     |> Seq.fold
-        (fun (sum, x) n -> ((if n = 20 || n >= 60 && (n - 20) % 40 = 0 then (sum + (n * fst x)) else sum), cycle x))
+        (fun (acc, x) n -> ((if n = 20 || n >= 60 && (n - 20) % 40 = 0 then acc + (n * fst x) else acc), cycle x))
         (0, (CPU(1, program)))
     |> fst)
+
+printfn
+    "The answer to the second part is:\n%s"
+    ({ 1 .. (6 * 40) }
+     |> Seq.fold (fun (acc, x) _ -> (fst x :: acc, cycle x)) ([], (CPU(1, program)))
+     |> fst
+     |> List.rev
+     |> List.mapi (fun i reg -> if abs (i % 40 - reg) < 2 then '#' else '.')
+     |> Seq.chunkBySize 40
+     |> Seq.map System.String
+     |> String.concat "\n")
