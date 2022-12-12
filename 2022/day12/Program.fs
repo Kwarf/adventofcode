@@ -20,16 +20,20 @@ let neigbors idx =
 let distance cond goal =
     let visited = new HashSet<int>()
     let rec loop paths =
-        let goal = List.tryFind (cond << List.head) paths
-        if goal.IsSome then goal.Value.Length - 1
-        else loop (paths |> List.map (fun path -> [
-            let pos = List.head path
-            let isAccessible a = Array.get grid a + 1 >= Array.get grid pos
-            for n in neigbors pos |> Seq.filter isAccessible do
-                if not <| visited.Contains n then
-                    yield n :: path
-                    visited.Add n |> ignore;
-        ]) |> List.collect id)
+        match List.tryFind (cond << List.head) paths with
+        | Some(path) -> path.Length - 1
+        | _ -> loop (paths
+            |> List.map (fun path ->
+                let pos = List.head path
+                let isAccessible a = Array.get grid a + 1 >= Array.get grid pos
+                neigbors pos
+                |> Seq.filter isAccessible
+                |> Seq.filter (not << visited.Contains)
+                |> Seq.map (fun x ->
+                    visited.Add(x) |> ignore
+                    (x :: path)))
+            |> Seq.collect id
+            |> Seq.toList)
     loop [[goal]]
 
 let locate c = input |> String.concat "" |> Seq.findIndex ((=) c)
