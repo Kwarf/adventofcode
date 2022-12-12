@@ -17,10 +17,10 @@ let neigbors idx =
     |> Seq.filter (fun (x, y) -> x >= 0 && y >= 0 && x < gw && y < grid.Length / gw)
     |> Seq.map (fun (x, y) -> x + gw * y)
 
-let distance start goal =
+let distance cond goal =
     let visited = new HashSet<int>()
     let rec loop paths =
-        let goal = List.tryFind ((=) start << List.head) paths
+        let goal = List.tryFind (cond << List.head) paths
         if goal.IsSome then goal.Value.Length - 1
         else loop (paths |> List.map (fun path -> [
             let pos = List.head path
@@ -36,4 +36,8 @@ let locate c = input |> String.concat "" |> Seq.findIndex ((=) c)
 
 printfn
     "The answer to the first part is: %i"
-    (distance (locate 'S') (locate 'E'))
+    (distance ((=) (locate 'S')) (locate 'E'))
+
+printfn
+    "The answer to the second part is: %i"
+    (distance ((=) (int 'a') << (Array.get grid)) (locate 'E'))
