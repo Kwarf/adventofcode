@@ -18,25 +18,26 @@ IEnumerable<(int X, int Y)> ParseLine(string line) => line
         _ => acc.Concat(Interpolate(acc[acc.Count - 1], x)).ToList(),
     }));
 
-ISet<(int, int)> Simulate(int floor, ISet<(int, int)> rocks)
+ISet<(int, int)> Simulate(Func<(int, int Y), bool> isDone, ISet<(int, int Y)> rocks, bool hasFloor)
 {
     var sand = new HashSet<(int, int)>();
+    var floor = hasFloor ? 2 + rocks.Select(x => x.Y).Max() : int.MaxValue;
     while (true)
     {
         var s = (X: 500, Y: 0);
-        while (true)
+        do
         {
-            if (s.Y > floor) return sand;
             s = s with { Y = s.Y + 1};
-            if (!rocks.Contains(s) && !sand.Contains(s)) continue;
+            if (!rocks.Contains(s) && !sand.Contains(s) && s.Y < floor) continue;
             s = s with { X = s.X - 1};
-            if (!rocks.Contains(s) && !sand.Contains(s)) continue;
+            if (!rocks.Contains(s) && !sand.Contains(s) && s.Y < floor) continue;
             s = s with { X = s.X + 2};
-            if (!rocks.Contains(s) && !sand.Contains(s)) continue;
+            if (!rocks.Contains(s) && !sand.Contains(s) && s.Y < floor) continue;
             s = s with { X = s.X - 1, Y = s.Y - 1};
             sand.Add(s);
             break;
-        }
+        } while (!isDone(s));
+        if (isDone(s)) return sand;
     }
 }
 
@@ -44,4 +45,5 @@ var input = File.ReadAllLines("input.txt")
     .SelectMany(ParseLine)
     .ToHashSet();
 
-Console.WriteLine($"The answer to the first part is: {Simulate(input.Select(x => x.Y).Max(), input).Count()}");
+Console.WriteLine($"The answer to the first part is: {Simulate(x => x.Y > input.Select(x => x.Y).Max(), input, false).Count()}");
+Console.WriteLine($"The answer to the second part is: {Simulate(x => x == (500, 0), input, true).Count()}");
