@@ -8,5 +8,6 @@ compiled language.
 % cargo build --release
 % time ./target/release/day15
 The answer to the first part is: 4919281
-./target/release/day15  0,19s user 0,00s system 99% cpu 0,192 total
+The answer to the second part is: 12630143363767
+./target/release/day15  3,01s user 0,01s system 1527% cpu 0,198 total
 ```
