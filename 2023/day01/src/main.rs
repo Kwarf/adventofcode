@@ -1,27 +1,51 @@
-use std::{
-    fs::File,
-    io::{BufRead, BufReader},
-};
+use std::fs::read_to_string;
 
 fn decode(line: &str) -> u32 {
-    let values = line
-        .chars()
+    line.chars()
         .filter_map(|x| x.to_digit(10))
-        .fold((None, None), |acc, x| (acc.0.or(Some(x)), Some(x)));
-
-    values.0.unwrap_or_default() * 10 + values.1.unwrap_or_default()
+        .fold([None, None], |[first, _], x| {
+            [first.or(Some(x * 10)), Some(x)]
+        })
+        .map(|x| x.unwrap())
+        .into_iter()
+        .sum()
 }
 
-fn main() -> std::io::Result<()> {
-    let file = File::open("input.txt")?;
+fn lenient_decode(line: &str) -> u32 {
+    const LOOKUP: [&str; 9] = [
+        "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
+    ];
+
+    let to_number = |number: &str| {
+        if let Some(n) = LOOKUP.iter().position(|&x| number.starts_with(x)) {
+            Some(n as u32 + 1)
+        } else {
+            number.chars().next().and_then(|x| x.to_digit(10))
+        }
+    };
+
+    (0..line.len())
+        .fold([None, None], |[first, last], n| {
+            [
+                first.or(to_number(&line[n..]).map(|x| x * 10)),
+                last.or(to_number(&line[line.len() - 1 - n..])),
+            ]
+        })
+        .map(|x| x.unwrap())
+        .into_iter()
+        .sum()
+}
+
+fn main() {
+    let file = read_to_string("input.txt").unwrap();
 
     println!(
         "The answer to the first part is: {}",
-        BufReader::new(file)
-            .lines()
-            .map(|x| decode(&x.unwrap()))
-            .sum::<u32>()
+        file.lines().map(decode).sum::<u32>()
     );
 
-    Ok(())
+    println!(
+        "The answer to the second part is: {}",
+        file.lines().map(lenient_decode).sum::<u32>()
+    );
 }
