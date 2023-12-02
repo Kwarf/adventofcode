@@ -1,4 +1,5 @@
 use std::{
+    cmp::max,
     collections::HashMap,
     fs::File,
     io::{BufRead, BufReader},
@@ -38,6 +39,17 @@ fn is_possible<'a>(bag: &impl Index<&'a Color, Output = u32>, game: &'a Game) ->
     game.iter().all(|x| bag[&x.1] >= x.0)
 }
 
+fn minimum_required_power(game: &Game) -> u32 {
+    game.iter()
+        .fold([0, 0, 0], |[r, g, b], (n, color)| match color {
+            Color::Red => [max(r, *n), g, b],
+            Color::Green => [r, max(g, *n), b],
+            Color::Blue => [r, g, max(b, *n)],
+        })
+        .into_iter()
+        .product()
+}
+
 fn main() {
     let bag = HashMap::from([(Color::Red, 12), (Color::Green, 13), (Color::Blue, 14)]);
 
@@ -58,5 +70,13 @@ fn main() {
                 None
             })
             .sum::<usize>()
+    );
+
+    println!(
+        "The answer to the second part is: {}",
+        games
+            .iter()
+            .map(minimum_required_power)
+            .sum::<u32>()
     );
 }
