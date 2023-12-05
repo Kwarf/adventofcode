@@ -1,7 +1,10 @@
 use std::{
+    cmp::min,
     fs::File,
     io::{BufRead, BufReader},
 };
+
+use rayon::{iter::ParallelIterator, slice::ParallelSlice};
 
 #[derive(Debug)]
 struct Map {
@@ -81,6 +84,7 @@ fn main() {
     println!(
         "The answer to the first part is: {}",
         seeds
+            .clone()
             .into_iter()
             .map(|mut x| {
                 let mut current = "seed";
@@ -90,6 +94,27 @@ fn main() {
                     current = &map.to;
                 }
                 x
+            })
+            .min()
+            .unwrap()
+    );
+
+    println!(
+        "The answer to the second part is: {}",
+        seeds
+            .par_chunks_exact(2)
+            .map(|pair| {
+                let mut lowest = u64::MAX;
+                for mut x in pair[0]..pair[0] + pair[1] {
+                    let mut current = "seed";
+                    while current != "location" {
+                        let map = maps.iter().find(|x| x.from == current).unwrap();
+                        x = map.find(x).unwrap_or(x);
+                        current = &map.to;
+                    }
+                    lowest = min(lowest, x);
+                }
+                lowest
             })
             .min()
             .unwrap()
