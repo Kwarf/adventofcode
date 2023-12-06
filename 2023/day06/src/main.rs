@@ -1,15 +1,15 @@
 #[derive(Clone, Copy)]
 struct Race {
-    time: u16,
-    distance: u16,
+    time: u64,
+    distance: u64,
 }
 
 impl Race {
-    fn trials(self) -> impl Iterator<Item = u16> {
+    fn trials(self) -> impl Iterator<Item = u64> {
         1..self.time
     }
 
-    fn is_faster(self, hold: u16) -> bool {
+    fn is_faster(self, hold: u64) -> bool {
         hold * (self.time - hold) > self.distance
     }
 }
@@ -42,5 +42,15 @@ fn main() {
             .iter()
             .map(|x| x.trials().filter(|hold| x.is_faster(*hold)).count())
             .product::<usize>()
+    );
+
+    let race = Race {
+        time: 54708275,
+        distance: 239114212951253,
+    };
+
+    println!(
+        "The answer to the second part is: {}",
+        race.trials().filter(|hold| race.is_faster(*hold)).count()
     );
 }
