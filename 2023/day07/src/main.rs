@@ -1,4 +1,5 @@
 use std::{
+    cmp::Ordering,
     collections::HashMap,
     fs::File,
     io::{BufRead, BufReader},
@@ -8,23 +9,6 @@ use std::{
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 struct Card {
     value: char,
-}
-
-impl PartialOrd for Card {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for Card {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        const RANKINGS: [char; 13] = [
-            'A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2',
-        ];
-        let a = RANKINGS.iter().position(|x| x == &self.value);
-        let b = RANKINGS.iter().position(|x| x == &other.value);
-        b.cmp(&a)
-    }
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -38,18 +22,22 @@ enum Type {
     FiveOfAKind,
 }
 
-#[derive(Debug, Eq)]
+#[derive(Debug)]
 struct Hand {
     cards: Vec<Card>,
     bid: usize,
 }
 
 impl Hand {
-    fn get_type(&self) -> Type {
-        let map = self.cards.iter().fold(HashMap::new(), |mut acc, x| {
+    fn get_type(&self, extra_rules: Option<fn(&mut HashMap<&Card, i32>)>) -> Type {
+        let mut map = self.cards.iter().fold(HashMap::new(), |mut acc, x| {
             acc.entry(x).and_modify(|cnt| *cnt += 1).or_insert(1);
             acc
         });
+
+        if let Some(extra_rules) = extra_rules {
+            extra_rules(&mut map);
+        }
 
         match map.iter().max_by(|a, b| a.1.cmp(&b.1)) {
             Some((_, 5)) => Type::FiveOfAKind,
@@ -61,36 +49,6 @@ impl Hand {
             Some((_, 1)) => Type::HighCard,
             _ => panic!(),
         }
-    }
-}
-
-impl PartialEq for Hand {
-    fn eq(&self, other: &Self) -> bool {
-        self.cards == other.cards
-    }
-}
-
-impl PartialOrd for Hand {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(&other))
-    }
-}
-
-impl Ord for Hand {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        match self.get_type().cmp(&other.get_type()) {
-            std::cmp::Ordering::Equal => (),
-            ord => return ord,
-        }
-
-        for i in 0..self.cards.len() {
-            match self.cards[i].cmp(&other.cards[i]) {
-                std::cmp::Ordering::Equal => (),
-                ord => return ord,
-            }
-        }
-
-        std::cmp::Ordering::Equal
     }
 }
 
@@ -109,6 +67,19 @@ impl FromStr for Hand {
     }
 }
 
+fn compare_cards(a: &[Card], b: &[Card], rankings: &[char; 13]) -> Ordering {
+    for i in 0..a.len() {
+        let a = rankings.iter().position(|x| x == &a[i].value);
+        let b = rankings.iter().position(|x| x == &b[i].value);
+        match b.cmp(&a) {
+            std::cmp::Ordering::Equal => (),
+            ord => return ord,
+        }
+    }
+
+    std::cmp::Ordering::Equal
+}
+
 fn main() {
     let file = File::open("input.txt").unwrap();
     let mut hands = BufReader::new(file)
@@ -116,10 +87,61 @@ fn main() {
         .map(|x| x.unwrap().parse().unwrap())
         .collect::<Vec<Hand>>();
 
-    hands.sort();
+    hands.sort_by(|a, b| {
+        match a.get_type(None).cmp(&b.get_type(None)) {
+            std::cmp::Ordering::Equal => (),
+            ord => return ord,
+        }
+
+        compare_cards(
+            &a.cards,
+            &b.cards,
+            &[
+                'A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2',
+            ],
+        )
+    });
 
     println!(
         "The answer to the first part is: {}",
+        hands
+            .iter()
+            .enumerate()
+            .map(|(i, x)| (i + 1) * x.bid)
+            .sum::<usize>()
+    );
+
+    hands.sort_by(|a, b| {
+        let extra_rules = |map: &mut HashMap<&Card, i32>| {
+            if let Some(n) = map.remove(&Card { value: 'J' }) {
+                let foo = map
+                    .iter()
+                    .max_by(|a, b| a.1.cmp(&b.1))
+                    .map(|x| *x.0)
+                    .unwrap_or(&Card { value: 'A' });
+                map.entry(&foo).and_modify(|cnt| *cnt += n).or_insert(n);
+            }
+        };
+
+        match a
+            .get_type(Some(extra_rules))
+            .cmp(&b.get_type(Some(extra_rules)))
+        {
+            std::cmp::Ordering::Equal => (),
+            ord => return ord,
+        }
+
+        compare_cards(
+            &a.cards,
+            &b.cards,
+            &[
+                'A', 'K', 'Q', 'T', '9', '8', '7', '6', '5', '4', '3', '2', 'J',
+            ],
+        )
+    });
+
+    println!(
+        "The answer to the second part is: {}",
         hands
             .iter()
             .enumerate()
