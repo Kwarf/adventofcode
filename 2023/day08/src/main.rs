@@ -6,6 +6,7 @@ use std::{
 
 use itertools::FoldWhile::{Continue, Done};
 use itertools::Itertools;
+use num::integer::lcm;
 
 fn parse_line(line: &str) -> (String, (String, String)) {
     let mut split = line.split(" = ");
@@ -30,12 +31,12 @@ fn main() {
     let nodes: HashMap<String, (String, String)> =
         lines.skip(1).map(|x| parse_line(&x.unwrap())).collect();
 
-    println!(
-        "The answer to the first part is: {}",
+    let find = |start: &str, to: fn(&str) -> bool| {
         instructions
+            .clone()
             .into_iter()
-            .fold_while((0, "AAA"), |(steps, current), instruction| {
-                if current == "ZZZ" {
+            .fold_while((0u64, start), |(steps, current), instruction| {
+                if to(&current) && steps > 0 {
                     Done((steps, current))
                 } else {
                     match instruction {
@@ -47,5 +48,20 @@ fn main() {
             })
             .into_inner()
             .0
+    };
+
+    println!(
+        "The answer to the first part is: {}",
+        find("AAA", |x| x == "ZZZ")
+    );
+
+    println!(
+        "The answer to the second part is: {}",
+        nodes
+            .keys()
+            .filter(|x| x.ends_with("Z"))
+            .map(|x| find(&x, |t| t.ends_with("Z")))
+            .reduce(lcm)
+            .unwrap()
     );
 }
