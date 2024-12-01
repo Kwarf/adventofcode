@@ -1,39 +1,43 @@
-use std::fs::read_to_string;
+use std::{fs::read_to_string, str::FromStr};
 
-use itertools::Itertools;
-
-fn parse_line(line: &str) -> (u32, u32) {
+fn parse_line<T>(line: &str) -> (T, T)
+where
+    T: FromStr,
+    <T as FromStr>::Err: std::fmt::Debug,
+{
     let mut iter = line.split_whitespace();
-    let left = iter.next().unwrap().parse().unwrap();
-    let right = iter.next().unwrap().parse().unwrap();
-    (left, right)
+    (
+        iter.next().unwrap().parse().unwrap(),
+        iter.next().unwrap().parse().unwrap(),
+    )
 }
 
 fn main() {
-    let pairs = read_to_string("input.txt")
-        .unwrap()
-        .lines()
-        .map(parse_line)
-        .collect::<Vec<(u32, u32)>>();
-
-    let lefts = pairs
-        .iter()
-        .map(|(left, _)| left)
-        .sorted()
-        .collect::<Vec<&u32>>();
-
-    let rights = pairs
-        .iter()
-        .map(|(_, right)| right)
-        .sorted()
-        .collect::<Vec<&u32>>();
+    let (lefts, rights) = {
+        let (mut l, mut r) = read_to_string("input.txt")
+            .unwrap()
+            .lines()
+            .map(parse_line::<i32>)
+            .unzip::<_, _, Vec<_>, Vec<_>>();
+        l.sort_unstable();
+        r.sort_unstable();
+        (l, r)
+    };
 
     println!(
         "The answer to the first part is: {}",
         lefts
             .iter()
             .zip(rights.iter())
-            .map(|(&left, &right)| (*left as i32 - *right as i32).abs() as u32)
-            .sum::<u32>()
+            .map(|(&left, &right)| (left - right).abs())
+            .sum::<i32>()
+    );
+
+    println!(
+        "The answer to the second part is: {}",
+        lefts
+            .iter()
+            .map(|&left| left as usize * rights.iter().filter(|&&right| right == left).count())
+            .sum::<usize>()
     );
 }
