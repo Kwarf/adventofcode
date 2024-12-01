@@ -36,4 +36,12 @@ fn main() {
             .map(|(&left, &right)| (*left as i32 - *right as i32).abs() as u32)
             .sum::<u32>()
     );
+
+    println!(
+        "The answer to the second part is: {}",
+        lefts
+            .iter()
+            .map(|&left| *left as usize * rights.iter().filter(|&&right| right == left).count())
+            .sum::<usize>()
+    );
 }
