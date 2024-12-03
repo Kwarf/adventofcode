@@ -1,55 +1,28 @@
 use std::{fs::read_to_string, str::FromStr};
 
-#[derive(PartialEq)]
-enum Safety {
-    Unknown(i8),
-    Decreasing(i8),
-    Increasing(i8),
-    Unsafe,
-}
+use itertools::Itertools;
 
 #[derive(Debug)]
 struct Report(Vec<i8>);
 
 impl Report {
     fn is_safe(&self) -> bool {
-        fn valid_step(diff: i8) -> bool {
-            diff.abs() != 0 && diff.abs() <= 3
-        }
-
-        self.0
+        let (diffs, signs) = self
+            .0
             .iter()
-            .skip(1)
-            .fold(Safety::Unknown(self.0[0]), |s, &n| match s {
-                Safety::Unknown(x) => {
-                    let diff = n - x;
-                    if !valid_step(diff) {
-                        Safety::Unsafe
-                    } else if diff.signum() == 1 {
-                        Safety::Increasing(n)
-                    } else {
-                        Safety::Decreasing(n)
-                    }
-                }
-                Safety::Decreasing(x) => {
-                    let diff = n - x;
-                    if !valid_step(diff) || diff.signum() == 1 {
-                        Safety::Unsafe
-                    } else {
-                        Safety::Decreasing(n)
-                    }
-                }
-                Safety::Increasing(x) => {
-                    let diff = n - x;
-                    if !valid_step(diff) || diff.signum() == -1 {
-                        Safety::Unsafe
-                    } else {
-                        Safety::Increasing(n)
-                    }
-                }
-                Safety::Unsafe => Safety::Unsafe,
-            })
-            != Safety::Unsafe
+            .tuple_windows()
+            .map(|(a, b)| ((a - b).abs(), (a - b).signum()))
+            .unzip::<_, _, Vec<_>, Vec<_>>();
+
+        diffs.iter().all(|&diff| diff != 0 && diff <= 3) && (signs.iter().dedup().count() == 1)
+    }
+
+    fn dampened_reports<'a>(&'a self) -> impl Iterator<Item = Report> + 'a {
+        (0..self.0.len()).map(|i| {
+            let mut modified = self.0.clone();
+            modified.remove(i);
+            Report(modified)
+        })
     }
 }
 
@@ -75,5 +48,13 @@ fn main() {
     println!(
         "The answer to the first part is: {}",
         reports.iter().filter(|x| x.is_safe()).count()
+    );
+
+    println!(
+        "The answer to the second part is: {}",
+        reports
+            .iter()
+            .filter(|x| x.is_safe() || x.dampened_reports().any(|x| x.is_safe()))
+            .count()
     );
 }

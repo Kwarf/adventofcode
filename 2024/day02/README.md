@@ -1,8 +1,9 @@
 # --- Day 2: Red-Nosed Reports ---
 
-Some sort of state machine shenanigans.
+Check ALL possibilities.
 
 ```
 % cargo run --release -q
 The answer to the first part is: 326
+The answer to the second part is: 381
 ```
