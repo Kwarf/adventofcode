@@ -3,6 +3,9 @@ main
 *.lock
 .vscode
 
+# AoC asks that we do not share puzzle inputs
+input.txt
+
 # Haskell
 *.hi
 .stack-work
