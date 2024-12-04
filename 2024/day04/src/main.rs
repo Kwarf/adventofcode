@@ -1,5 +1,7 @@
 use std::fs::read_to_string;
 
+use itertools::Itertools;
+
 struct Grid(Vec<Vec<char>>);
 
 impl Grid {
@@ -18,21 +20,8 @@ impl Grid {
                 'M' => self.is_xmas((pos.0 + vector.0, pos.1 + vector.1), vector, 'A'),
                 'A' => self.is_xmas((pos.0 + vector.0, pos.1 + vector.1), vector, 'S'),
                 'S' => true,
-                _ => panic!(),
+                _ => unreachable!(),
             }
-    }
-}
-
-impl IntoIterator for Grid {
-    type Item = char;
-    type IntoIter = std::vec::IntoIter<Self::Item>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.0
-            .into_iter()
-            .flat_map(|x| x.into_iter())
-            .collect::<Vec<char>>()
-            .into_iter()
     }
 }
 
@@ -41,14 +30,14 @@ fn main() {
         read_to_string("input.txt")
             .unwrap()
             .lines()
-            .map(|x| x.chars().collect::<Vec<char>>())
+            .map(|x| x.chars().collect::<Vec<_>>())
             .collect(),
     );
 
     let search_vectors = (-1..=1)
         .flat_map(|y| (-1..=1).map(move |x| (x, y)))
         .filter(|(x, y)| *x != 0 || *y != 0)
-        .collect::<Vec<(i32, i32)>>();
+        .collect::<Vec<_>>();
 
     println!(
         "The answer to the first part is: {}",
@@ -63,5 +52,22 @@ fn main() {
                     .count()
             })
             .sum::<usize>()
+    );
+
+    println!(
+        "The answer to the second part is: {}",
+        input
+            .coordinates()
+            .map(|(x, y)| ((x as i32, y as i32), input.get(x, y)))
+            .filter(|(_, c)| c == &Some(&'M'))
+            .flat_map(|((x, y), _)| {
+                [(-1, -1), (1, -1), (1, 1), (-1, 1)]
+                    .iter()
+                    .filter(|&&v| input.is_xmas((x, y), v, 'M'))
+                    .map(|v| ((x + v.0), (y + v.1)))
+                    .collect::<Vec<_>>()
+            })
+            .duplicates()
+            .count()
     );
 }
