@@ -26,26 +26,45 @@ fn parse_printouts(lines: &[&str]) -> Vec<Vec<u8>> {
         .collect()
 }
 
-fn is_valid(rules: &HashMap<u8, Vec<u8>>, printout: &[u8]) -> bool {
-    printout
-        .iter()
-        .fold(HashSet::from([printout[0]]), |mut set, n| {
-            if set.is_empty() {
-                set
-            } else if let Some(rules) = rules.get(n) {
-                if rules.iter().any(|x| set.contains(x)) {
-                    HashSet::new()
+#[derive(PartialEq)]
+enum Validation {
+    Undetermined(HashSet<u8>),
+    Invalid(u8),
+    Valid,
+}
+
+fn validate(rules: &HashMap<u8, Vec<u8>>, printout: &[u8]) -> Validation {
+    match printout.iter().fold(
+        Validation::Undetermined(HashSet::from([printout[0]])),
+        |validation, n| match validation {
+            Validation::Undetermined(mut set) => {
+                if let Some(rules) = rules.get(n) {
+                    if rules.iter().any(|x| set.contains(x)) {
+                        Validation::Invalid(*n)
+                    } else {
+                        set.insert(*n);
+                        Validation::Undetermined(set)
+                    }
                 } else {
                     set.insert(*n);
-                    set
+                    Validation::Undetermined(set)
                 }
-            } else {
-                set.insert(*n);
-                set
             }
-        })
-        .len()
-        > 0
+            _ => validation,
+        },
+    ) {
+        Validation::Undetermined(_) => Validation::Valid,
+        validation => validation,
+    }
+}
+
+fn reorder(rules: &HashMap<u8, Vec<u8>>, printout: &[u8]) -> Vec<u8> {
+    let mut printout = printout.to_vec();
+    while let Validation::Invalid(page) = validate(rules, &printout) {
+        let index = printout.iter().position(|x| x == &page).unwrap();
+        printout.swap(index, index - 1);
+    }
+    printout
 }
 
 fn main() {
@@ -59,7 +78,17 @@ fn main() {
         "The answer to the first part is: {}",
         printouts
             .iter()
-            .filter(|x| is_valid(&rules, x))
+            .filter(|x| validate(&rules, x) == Validation::Valid)
+            .map(|x| x[x.len() / 2] as u32)
+            .sum::<u32>()
+    );
+
+    println!(
+        "The answer to the second part is: {}",
+        printouts
+            .iter()
+            .filter(|x| validate(&rules, x) != Validation::Valid)
+            .map(|x| reorder(&rules, x))
             .map(|x| x[x.len() / 2] as u32)
             .sum::<u32>()
     );
