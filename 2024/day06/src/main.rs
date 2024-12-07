@@ -11,12 +11,6 @@ impl Add<Vec2> for Vec2 {
     }
 }
 
-impl Vec2 {
-    fn rotated_clockwise(&self) -> Vec2 {
-        Vec2(-self.1, self.0)
-    }
-}
-
 struct Map {
     obstacles: HashSet<Vec2>,
     size: Vec2,
@@ -30,6 +24,77 @@ impl Map {
     fn is_obstacle(&self, position: &Vec2) -> bool {
         self.obstacles.contains(&position)
     }
+
+    fn with_obstacle(&self, position: &Vec2) -> Map {
+        let mut obstacles = self.obstacles.clone();
+        obstacles.insert(*position);
+        Map {
+            obstacles,
+            size: self.size,
+        }
+    }
+}
+
+#[derive(Hash, Eq, PartialEq, Clone, Copy, Debug)]
+struct Guard {
+    position: Vec2,
+    direction: Vec2,
+}
+
+impl Guard {
+    fn moved(&self) -> Guard {
+        Guard {
+            position: self.position + self.direction,
+            direction: self.direction,
+        }
+    }
+
+    fn turned(&self) -> Guard {
+        Guard {
+            position: self.position,
+            direction: Vec2(-self.direction.1, self.direction.0),
+        }
+    }
+}
+
+#[derive(PartialEq)]
+enum Result {
+    Exited(HashSet<Guard>),
+    Loop,
+}
+
+fn walk(mut visited: HashSet<Guard>, map: &Map, guard: Guard) -> Result {
+    if !visited.insert(guard) {
+        return Result::Loop;
+    }
+
+    if !map.is_in_bounds(&guard.moved().position) {
+        return Result::Exited(visited);
+    }
+
+    walk(
+        visited,
+        map,
+        if map.is_obstacle(&guard.moved().position) {
+            guard.turned()
+        } else {
+            guard.moved()
+        },
+    )
+}
+
+fn place_obstacles(visited: &HashSet<Guard>, map: &Map, initial: &Guard) -> HashSet<Vec2> {
+    visited
+        .iter()
+        .map(|visited| visited.moved().position)
+        .filter(|p| map.is_in_bounds(p) && !map.is_obstacle(p))
+        .filter_map(
+            |p| match walk(HashSet::new(), &map.with_obstacle(&p), initial.clone()) {
+                Result::Loop => Some(p),
+                Result::Exited(_) => None,
+            },
+        )
+        .collect()
 }
 
 fn find_chars(input: &[&str], c: char) -> Vec<Vec2> {
@@ -55,39 +120,34 @@ fn parse_map(input: &[&str]) -> Map {
     }
 }
 
-fn walk(
-    mut visited: HashSet<Vec2>,
-    map: &Map,
-    position: Vec2,
-    direction: Vec2,
-) -> Option<HashSet<Vec2>> {
-    visited.insert(position);
-    if !map.is_in_bounds(&(position + direction)) {
-        return Some(visited);
-    }
-
-    let (next, direction) = if map.is_obstacle(&(position + direction)) {
-        (
-            position + direction.rotated_clockwise(),
-            direction.rotated_clockwise(),
-        )
-    } else {
-        (position + direction, direction)
-    };
-
-    walk(visited, map, next, direction)
-}
-
 fn main() {
     let input = read_to_string("input.txt").unwrap();
     let lines = input.lines().collect::<Vec<_>>();
     let map = parse_map(&lines);
-    let guard_position = find_chars(&lines, '^')[0];
+    let guard = Guard {
+        position: find_chars(&lines, '^')[0],
+        direction: Vec2(0, -1),
+    };
+
+    let result = walk(HashSet::new(), &map, guard);
 
     println!(
         "The answer to the first part is: {}",
-        walk(HashSet::new(), &map, guard_position, Vec2(0, -1))
-            .unwrap()
-            .len()
+        match &result {
+            Result::Exited(visited) => visited
+                .iter()
+                .map(|x| x.position)
+                .collect::<HashSet<_>>()
+                .len(),
+            Result::Loop => unreachable!(),
+        }
+    );
+
+    println!(
+        "The answer to the second part is: {}",
+        match &result {
+            Result::Exited(visited) => place_obstacles(visited, &map, &guard).len(),
+            Result::Loop => unreachable!(),
+        }
     );
 }
