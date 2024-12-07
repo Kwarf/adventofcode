@@ -7,16 +7,35 @@ struct Problem {
 }
 
 impl Problem {
-    fn is_solvable(&self) -> bool {
-        fn solve(v: &u64, values: &[u64], expected: u64) -> bool {
+    fn is_solvable(&self, allow_concatenation: bool) -> bool {
+        fn solve(v: &u64, values: &[u64], expected: u64, allow_concatenation: bool) -> bool {
             if values.is_empty() {
                 return *v == expected;
             }
-            solve(&(v + values[0]), &values[1..], expected)
-                || solve(&(v * values[0]), &values[1..], expected)
+            solve(
+                &(v + values[0]),
+                &values[1..],
+                expected,
+                allow_concatenation,
+            ) || solve(
+                &(v * values[0]),
+                &values[1..],
+                expected,
+                allow_concatenation,
+            ) || if allow_concatenation {
+                let concatenated = format!("{}{}", v, values[0].to_string()).parse().unwrap();
+                solve(&concatenated, &values[1..], expected, allow_concatenation)
+            } else {
+                false
+            }
         }
 
-        solve(&self.values[0], &self.values[1..], self.expected)
+        solve(
+            &self.values[0],
+            &self.values[1..],
+            self.expected,
+            allow_concatenation,
+        )
     }
 }
 
@@ -40,7 +59,16 @@ fn main() {
         "The answer to the first part is: {}",
         problems
             .iter()
-            .filter(|p| p.is_solvable())
+            .filter(|p| p.is_solvable(false))
+            .map(|x| x.expected)
+            .sum::<u64>()
+    );
+
+    println!(
+        "The answer to the second part is: {}",
+        problems
+            .iter()
+            .filter(|p| p.is_solvable(true))
             .map(|x| x.expected)
             .sum::<u64>()
     );
