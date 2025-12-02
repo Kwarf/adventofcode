@@ -8,4 +8,5 @@ Anyway, regular expressions to the rescure, but _fancy_ ones, because the usual
 ```
 % cargo run --release -q
 The answer to the first part is: 35367539282
+The answer to the second part is: 45814076230
 ```

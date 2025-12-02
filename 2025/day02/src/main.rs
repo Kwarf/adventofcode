@@ -3,10 +3,15 @@ use std::ops::Range;
 use fancy_regex::Regex;
 use std::sync::OnceLock;
 
-static REGEX: OnceLock<Regex> = OnceLock::new();
+static P1_REGEX: OnceLock<Regex> = OnceLock::new();
+static P2_REGEX: OnceLock<Regex> = OnceLock::new();
 
-fn is_invalid(num: usize) -> bool {
-    let regex = REGEX.get_or_init(|| Regex::new(r"^(.+)\1$").unwrap());
+fn is_invalid(is_part_one: bool, num: usize) -> bool {
+    let regex = if is_part_one {
+        P1_REGEX.get_or_init(|| Regex::new(r"^(.+)\1$").unwrap())
+    } else {
+        P2_REGEX.get_or_init(|| Regex::new(r"^(.+)\1+$").unwrap())
+    };
     regex.is_match(&num.to_string()).unwrap()
 }
 
@@ -30,7 +35,16 @@ fn main() {
         ranges
             .iter()
             .flat_map(|x| x.start..=x.end)
-            .filter(|x| is_invalid(*x))
+            .filter(|x| is_invalid(true, *x))
+            .sum::<usize>()
+    );
+
+    println!(
+        "The answer to the second part is: {}",
+        ranges
+            .iter()
+            .flat_map(|x| x.start..=x.end)
+            .filter(|x| is_invalid(false, *x))
             .sum::<usize>()
     );
 }
