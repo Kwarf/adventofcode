@@ -1,20 +1,5 @@
 use std::ops::Range;
 
-use fancy_regex::Regex;
-use std::sync::OnceLock;
-
-static P1_REGEX: OnceLock<Regex> = OnceLock::new();
-static P2_REGEX: OnceLock<Regex> = OnceLock::new();
-
-fn is_invalid(is_part_one: bool, num: usize) -> bool {
-    let regex = if is_part_one {
-        P1_REGEX.get_or_init(|| Regex::new(r"^(.+)\1$").unwrap())
-    } else {
-        P2_REGEX.get_or_init(|| Regex::new(r"^(.+)\1+$").unwrap())
-    };
-    regex.is_match(&num.to_string()).unwrap()
-}
-
 fn parse_range(range_str: &str) -> Range<usize> {
     let parts: Vec<&str> = range_str.split('-').collect();
     Range {
@@ -24,27 +9,51 @@ fn parse_range(range_str: &str) -> Range<usize> {
 }
 
 fn main() {
-    let ranges = std::fs::read_to_string("input.txt")
+    let numbers = std::fs::read_to_string("input.txt")
         .unwrap()
         .split(',')
         .map(parse_range)
+        .flat_map(|x| x.start..=x.end)
+        .map(|x| x.to_string())
         .collect::<Vec<_>>();
 
     println!(
         "The answer to the first part is: {}",
-        ranges
+        numbers
             .iter()
-            .flat_map(|x| x.start..=x.end)
-            .filter(|x| is_invalid(true, *x))
+            .filter(|x| {
+                let len = x.len();
+                if !len.is_multiple_of(2) {
+                    return false;
+                }
+                let mid = len / 2;
+                x[..mid] == x[mid..]
+            })
+            .map(|x| x.parse::<usize>().unwrap())
             .sum::<usize>()
     );
 
     println!(
         "The answer to the second part is: {}",
-        ranges
+        numbers
             .iter()
-            .flat_map(|x| x.start..=x.end)
-            .filter(|x| is_invalid(false, *x))
+            .filter(|x| {
+                let len = x.len();
+                for size in (1..=len / 2).filter(|x| len.is_multiple_of(*x)) {
+                    let mut matched = true;
+                    for i in (0..len).step_by(size) {
+                        if x[i..i + size] != x[0..size] {
+                            matched = false;
+                            break;
+                        }
+                    }
+                    if matched {
+                        return true;
+                    }
+                }
+                false
+            })
+            .map(|x| x.parse::<usize>().unwrap())
             .sum::<usize>()
     );
 }
