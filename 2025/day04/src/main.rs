@@ -47,10 +47,16 @@ impl Map {
             })
             .collect()
     }
+
+    fn remove(&mut self, positions: &[(usize, usize)]) {
+        for (x, y) in positions {
+            self.data[y * self.width + x] = '.';
+        }
+    }
 }
 
 fn main() {
-    let map = std::fs::read_to_string("input.txt").unwrap().lines().fold(
+    let mut map = std::fs::read_to_string("input.txt").unwrap().lines().fold(
         Map::default(),
         |mut map, line| {
             if map.width == 0 {
@@ -65,4 +71,17 @@ fn main() {
         "The answer to the first part is: {}",
         map.accessible_rolls().len()
     );
+
+    println!("The answer to the second part is: {}", {
+        let mut removable = 0;
+        loop {
+            let positions = map.accessible_rolls();
+            let n = positions.len();
+            if n == 0 {
+                break removable;
+            }
+            removable += n;
+            map.remove(&positions);
+        }
+    });
 }
