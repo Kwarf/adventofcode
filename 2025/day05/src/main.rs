@@ -1,6 +1,6 @@
-use std::ops::RangeInclusive;
+use range_set_blaze::RangeSetBlaze;
 
-fn parse_input(input: &str) -> (Vec<RangeInclusive<usize>>, Vec<usize>) {
+fn parse_input(input: &str) -> (RangeSetBlaze<usize>, Vec<usize>) {
     let mut input_parts = input.split("\n\n");
     let ranges = input_parts.next().unwrap();
     let available_ids = input_parts.next().unwrap();
@@ -24,8 +24,8 @@ fn main() {
 
     println!(
         "The answer to the first part is: {}",
-        ids.iter()
-            .filter(|id| database.iter().any(|range| range.contains(id)))
-            .count()
+        ids.iter().filter(|&&id| database.contains(id)).count()
     );
+
+    println!("The answer to the second part is: {}", database.len());
 }
