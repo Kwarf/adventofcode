@@ -1,33 +1,52 @@
-struct Problem {
-    numbers: Vec<u64>,
+struct Problem<'a> {
+    numbers: Vec<&'a str>,
+    range: std::ops::Range<usize>,
     operator: char,
 }
 
-fn parse<'a>(mut input: impl DoubleEndedIterator<Item = &'a str>) -> Vec<Problem> {
-    let mut problems = input
-        .next_back()
-        .unwrap()
-        .split_whitespace()
-        .map(|x| Problem {
-            numbers: Vec::new(),
-            operator: x.chars().next().unwrap(),
-        })
-        .collect::<Vec<_>>();
-
-    for line in input {
-        for (i, value) in line.split_whitespace().enumerate() {
-            problems[i].numbers.push(value.parse().unwrap());
+impl Problem<'_> {
+    fn vertical_numbers(&self) -> Vec<u64> {
+        let mut numbers = vec![0; self.range.end - self.range.start];
+        for (x, n) in numbers.iter_mut().enumerate() {
+            for c in self
+                .numbers
+                .iter()
+                .map(|s| s.chars().nth(x).unwrap())
+                .filter(|c| *c != ' ')
+            {
+                *n = *n * 10 + u64::from(c.to_digit(10).unwrap());
+            }
         }
+        numbers
     }
-    problems
 }
 
-fn solve(problem: &Problem) -> u64 {
-    match problem.operator {
-        '+' => problem.numbers.iter().sum(),
-        '*' => problem.numbers.iter().product(),
-        _ => unreachable!(),
+fn parse<'a>(mut input: impl DoubleEndedIterator<Item = &'a str>) -> Vec<Problem<'a>> {
+    let mut problems = Vec::new();
+    let operators = input.next_back().unwrap();
+    let mut w = 1;
+    for n in (0..operators.len()).rev() {
+        match operators.chars().nth(n).unwrap() {
+            operator @ ('+' | '*') => {
+                problems.push(Problem {
+                    numbers: Vec::new(),
+                    range: n..n + w,
+                    operator,
+                });
+                w = 0;
+            }
+            ' ' => w += 1,
+            _ => unreachable!(),
+        }
     }
+
+    for line in input {
+        for problem in &mut problems {
+            problem.numbers.push(&line[problem.range.clone()]);
+        }
+    }
+
+    problems
 }
 
 fn main() {
@@ -36,6 +55,30 @@ fn main() {
 
     println!(
         "The answer to the first part is: {}",
-        problems.iter().map(solve).sum::<u64>()
+        problems
+            .iter()
+            .map(|x| (
+                x.operator,
+                x.numbers.iter().map(|n| n.trim().parse::<u64>().unwrap())
+            ))
+            .map(|(op, ns)| match op {
+                '+' => ns.sum::<u64>(),
+                '*' => ns.product::<u64>(),
+                _ => unreachable!(),
+            })
+            .sum::<u64>()
+    );
+
+    println!(
+        "The answer to the second part is: {}",
+        problems
+            .iter()
+            .map(|x| (x.operator, x.vertical_numbers().into_iter()))
+            .map(|(op, ns)| match op {
+                '+' => ns.sum::<u64>(),
+                '*' => ns.product::<u64>(),
+                _ => unreachable!(),
+            })
+            .sum::<u64>()
     );
 }
