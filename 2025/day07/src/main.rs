@@ -1,3 +1,6 @@
+use std::collections::HashMap;
+
+#[derive(Clone)]
 struct Diagram {
     data: Vec<char>,
     width: usize,
@@ -36,22 +39,48 @@ impl Diagram {
             _ => unreachable!(),
         }
     }
+
+    fn quantum_timelines(
+        &self,
+        visited: &mut HashMap<(usize, usize), usize>,
+        position: (usize, usize),
+    ) -> usize {
+        if let Some(&count) = visited.get(&position) {
+            return count;
+        }
+
+        if position.1 == self.height() {
+            return 1;
+        }
+
+        let result = match self.get(position.0, position.1) {
+            'S' | '.' | '|' => self.quantum_timelines(visited, (position.0, position.1 + 1)),
+            '^' => [position.0 - 1, position.0 + 1]
+                .into_iter()
+                .filter(|&x| x < self.width)
+                .map(|x| self.quantum_timelines(visited, (x, position.1 + 1)))
+                .sum(),
+            _ => unreachable!(),
+        };
+
+        visited.insert(position, result);
+        result
+    }
 }
 
 fn parse(input: &str) -> Diagram {
-    let mut diagram = Diagram {
+    Diagram {
         data: input.chars().filter(|c| *c != '\n').collect(),
         width: input.lines().next().unwrap().len(),
-    };
-    diagram.simulate((diagram.data.iter().position(|c| *c == 'S').unwrap(), 0usize));
-    diagram
+    }
 }
 
 fn main() {
     let diagram = parse(&std::fs::read_to_string("input.txt").unwrap());
 
-    println!(
-        "The answer to the first part is: {}",
+    println!("The answer to the first part is: {}", {
+        let mut diagram = diagram.clone();
+        diagram.simulate((diagram.data.iter().position(|c| *c == 'S').unwrap(), 0usize));
         (0..diagram.height())
             .map(|y| {
                 (0..diagram.width)
@@ -59,5 +88,13 @@ fn main() {
                     .count()
             })
             .sum::<usize>()
+    });
+
+    println!(
+        "The answer to the second part is: {}",
+        diagram.quantum_timelines(
+            &mut HashMap::new(),
+            (diagram.data.iter().position(|c| *c == 'S').unwrap(), 0usize)
+        )
     );
 }
