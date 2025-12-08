@@ -42,12 +42,12 @@ impl DisjointSet {
         self.parent[x]
     }
 
-    pub fn union(&mut self, x: usize, y: usize) {
+    pub fn union(&mut self, x: usize, y: usize) -> bool {
         let x_root = self.find(x);
         let y_root = self.find(y);
 
         if x_root == y_root {
-            return;
+            return false;
         }
 
         if self.size[x_root] < self.size[y_root] {
@@ -57,6 +57,7 @@ impl DisjointSet {
             self.parent[y_root] = x_root;
             self.size[x_root] += self.size[y_root];
         }
+        true
     }
 
     pub fn sizes(&mut self) -> Vec<usize> {
@@ -94,15 +95,33 @@ fn main() {
                 .map(move |(j, b)| (a.distance_to(b), i, j))
         })
         .sorted_by(|(a, _, _), (b, _, _)| a.cmp(b))
+        .map(|(_, a, b)| (a, b))
         .collect();
 
     let mut set = DisjointSet::new(boxes.len());
-    for &(_, a, b) in edges.iter().take(1000) {
-        set.union(a, b);
+    let mut remaining = boxes.len();
+
+    for &(a, b) in edges.iter().take(1000) {
+        if set.union(a, b) {
+            remaining -= 1;
+        }
     }
 
     println!(
         "The answer to the first part is: {}",
         set.sizes().iter().sorted().rev().take(3).product::<usize>()
     );
+
+    for &(a, b) in edges.iter().skip(1000) {
+        if set.union(a, b) {
+            remaining -= 1;
+            if remaining == 1 {
+                println!(
+                    "The answer to the second part is: {}",
+                    boxes[a].x * boxes[b].x
+                );
+                break;
+            }
+        }
+    }
 }
