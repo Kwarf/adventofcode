@@ -2,7 +2,12 @@ use std::collections::{HashSet, VecDeque};
 
 #[derive(Debug)]
 struct State {
-    lights: Vec<bool>,
+    light: bool,
+    joltage: u16,
+}
+
+fn lights_match(state: &[bool], desired: &[State]) -> bool {
+    state.iter().zip(desired.iter()).all(|(s, d)| *s == d.light)
 }
 
 #[derive(Debug)]
@@ -12,13 +17,13 @@ struct Schematic {
 
 #[derive(Debug)]
 struct Machine {
-    desired_state: State,
+    desired_state: Vec<State>,
     schematics: Vec<Schematic>,
 }
 
 impl Machine {
     fn configure(&self) -> usize {
-        let initial_state = vec![false; self.desired_state.lights.len()];
+        let initial_state = vec![false; self.desired_state.len()];
         let mut visited = HashSet::new();
         let mut queue = VecDeque::new();
 
@@ -34,7 +39,7 @@ impl Machine {
                     }
                 }
 
-                if new_state == self.desired_state.lights {
+                if lights_match(&new_state, &self.desired_state) {
                     return presses + 1;
                 }
 
@@ -51,13 +56,21 @@ impl Machine {
 fn parse_line(line: &str) -> Machine {
     let parts: Vec<&str> = line.split_whitespace().collect();
 
-    let desired_state = State {
-        lights: parts[0]
-            .trim_matches(&['[', ']'][..])
-            .chars()
-            .map(|c| c == '#')
-            .collect(),
-    };
+    let desired_state: Vec<State> = parts[0]
+        .trim_matches(&['[', ']'][..])
+        .chars()
+        .map(|c| c == '#')
+        .zip(
+            parts
+                .iter()
+                .find(|p| p.starts_with('{') && p.ends_with('}'))
+                .unwrap()
+                .trim_matches(&['{', '}'][..])
+                .split(',')
+                .map(|s| s.parse::<u16>().unwrap()),
+        )
+        .map(|(light, joltage)| State { light, joltage })
+        .collect();
 
     let schematics = parts[1..]
         .iter()
@@ -88,4 +101,6 @@ fn main() {
         "The answer to the first part is: {}",
         machines.iter().map(|m| m.configure()).sum::<usize>()
     );
+
+    println!("The answer to the second part is: {}", todo!());
 }
